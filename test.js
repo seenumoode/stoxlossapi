@@ -1,49 +1,18 @@
-const { MongoClient } = require("mongodb");
-const gainers = require("./data/gainers.js");
-const losers = require("./data/losers.js");
+const UpstoxClient = require("upstox-js-sdk");
 
-const db = require("./mongo");
+// Configuration
+const API_KEY = "a1cfd100-f1f7-40df-a575-ac5fbcb84975";
+const API_SECRET = "wbuj4bffst";
+const REDIRECT_URI = "https://stockloss.com";
+const AUTH_CODE = "32CX36";
 
-async function run() {
-  try {
-    const now = new Date();
-    now.setDate(now.getDate() - 1);
-    now.setHours(0, 0, 0, 0);
+let upstoxClient = new UpstoxClient.Session(API_KEY, API_SECRET, REDIRECT_URI);
 
-    db.then((dbInstance) => {
-      const collection = dbInstance.collection("stoxdata");
-      const updated = new Date();
-      collection.createIndex({ date: 1, type: 1 }, { unique: true });
-      const query = { date: now, type: "loser" };
-      const update = {
-        $set: { date: now, type: "loser", data: losers, updated: now },
-      };
-      const options = { upsert: true };
-      collection.updateOne(query, update, options);
-    });
-  } finally {
-    // Close the database connection when finished or an error occurs
-  }
-}
-
-// config/redis.js
-const redis = require("redis");
-
-const redisClient = redis.createClient({
-  url:
-    process.env.REDIS_URL ||
-    "redis://redis-16347.c305.ap-south-1-1.ec2.redns.redis-cloud.com:16347",
-});
-
-redisClient.on("error", (err) => console.error("Redis connection error:", err));
-redisClient.on("connect", () => console.log("Redis connected"));
-
-const connectRedis = async () => {
-  if (redisClient.isOpen) return redisClient;
-  await redisClient.connect();
-  return redisClient;
-};
-
-module.exports = connectRedis;
-
-run().catch(console.error);
+upstoxClient
+  .getAccessToken({ code: AUTH_CODE })
+  .then((response) => {
+    console.log("Access Token:", response.access_token);
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+  });

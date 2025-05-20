@@ -1,8 +1,8 @@
 // data/marketData.js
-const { getCache } = require("../config");
 const nseFoNames = require("./nseFoNames");
 const gainers = require("./gainers");
 const losers = require("./losers");
+const moment = require("moment-timezone");
 
 //gainers = await getCache().get("gainerYes");
 
@@ -19,7 +19,7 @@ const assetMap = new Map(
 // Shared data
 const percentageChangeMap = new Map();
 
-const processMap = async (cache, db, stockClosed) => {
+const processMap = async (cache, db, stockClosed, getUIWebSocket) => {
   const positiveChanges = [];
   const negativeChanges = [];
 
@@ -102,24 +102,42 @@ const processMap = async (cache, db, stockClosed) => {
     EX: stockClosed ? 64800 : 300,
   });
 
+  try {
+    const wss = getUIWebSocket();
+    const data = {
+      source: "webSocket",
+      gainers: gainersData,
+      losers: losersData,
+    };
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+      console.log("Client Sent");
+    });
+  } catch (err) {
+    console.log("Error in UI WebSocket", err);
+  }
+
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+  const istDate = moment.tz("Asia/Kolkata").startOf("day").toDate();
 
   const collection = db.collection("stoxdata");
   const updated = new Date();
   collection.createIndex({ date: 1, type: 1 }, { unique: true });
-  let query = { date: now, type: "loser" };
+  let query = { date: istDate, type: "loser" };
   let update = {
-    $set: { date: now, type: "loser", data: losersData, updated: updated },
+    $set: { date: istDate, type: "loser", data: losersData, updated: updated },
   };
   const options = { upsert: true };
   collection.updateOne(query, update, options);
 
   collection.createIndex({ date: 1, type: 1 }, { unique: true });
-  query = { date: now, type: "gainer" };
+  query = { date: istDate, type: "gainer" };
   update = {
     $set: {
-      date: now,
+      date: istDate,
       type: "gainer",
       data: gainersData,
       updated: updated,

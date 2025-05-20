@@ -1,7 +1,8 @@
 // cron/jobs.js
 const cron = require("node-cron");
-const { getDb, getCache, getWebSocket } = require("../config");
+const { getDb, getCache, getWebSocket, getUIWebSocket } = require("../config");
 const { processMap } = require("../data/marketData");
+const moment = require("moment-timezone");
 
 async function getYesterdayData() {
   try {
@@ -12,8 +13,14 @@ async function getYesterdayData() {
     now.setDate(now.getDate() - 1);
     now.setHours(0, 0, 0, 0);
 
+    const istDate = moment
+      .tz("Asia/Kolkata")
+      .subtract(1, "days")
+      .startOf("day")
+      .toDate();
+
     const collection = db.collection("stoxdata");
-    var query = { date: now, type: "loser" };
+    var query = { date: istDate, type: "loser" };
     collection
       .find(query)
       .toArray()
@@ -21,7 +28,7 @@ async function getYesterdayData() {
         cache.set("loserYes", JSON.stringify(i[0].data), { EX: 86400 });
       });
 
-    var query = { date: now, type: "gainer" };
+    var query = { date: istDate, type: "gainer" };
     collection
       .find(query)
       .toArray()
@@ -56,17 +63,18 @@ async function getData() {
     // Access WebSocket if initialized
     try {
       streamer = await getWebSocket();
-      if (streamer.isConnected()) {
+      if (streamer) {
         console.log("Cron job: WebSocket is active, processing market data");
         // Optionally resubscribe or send messages
         // streamer.subscribe(instrumentKeys, "full");
       }
     } catch (err) {
-      console.warn("WebSocket not initialized, skipping WebSocket tasks");
+      console.warn(JSON.stringify(err));
+      console.log("Cron job: WebSocket not initialized, initializing now");
     }
 
     // Process market data
-    processMap(cache, db);
+    processMap(cache, db, true, getUIWebSocket);
 
     console.log("Cron job executed: Processed market data");
   } catch (err) {
@@ -75,7 +83,7 @@ async function getData() {
 }
 
 cron.schedule(
-  "*/5 * * * *'",
+  "*/1 * * * *'",
   async () => {
     getData();
   },
