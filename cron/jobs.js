@@ -3,21 +3,14 @@ const cron = require("node-cron");
 const { getDb, getCache, getWebSocket, getUIWebSocket } = require("../config");
 const { processMap } = require("../data/marketData");
 const moment = require("moment-timezone");
+const { isTodayWorkingDay, getPreviousWorkingDay } = require("../utils/utils");
 
 async function getYesterdayData() {
   try {
     const db = await getDb();
     const cache = await getCache();
 
-    const now = new Date();
-    now.setDate(now.getDate() - 1);
-    now.setHours(0, 0, 0, 0);
-
-    const istDate = moment
-      .tz("Asia/Kolkata")
-      .subtract(1, "days")
-      .startOf("day")
-      .toDate();
+    const istDate = getPreviousWorkingDay();
 
     const collection = db.collection("stoxdata");
     var query = { date: istDate, type: "loser" };
@@ -42,7 +35,6 @@ async function getYesterdayData() {
   }
 }
 
-function getUpstoxData() {}
 // Example cron job running every minute
 cron.schedule(
   "14 9 * * *",
@@ -85,7 +77,11 @@ async function getData() {
 cron.schedule(
   "*/1 * * * *'",
   async () => {
-    getData();
+    if (isTodayWorkingDay()) {
+      getData();
+    } else {
+      console.log("Today is a holiday or weekend, skipping data processing");
+    }
   },
   {
     timezone: "Asia/Kolkata",

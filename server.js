@@ -76,7 +76,7 @@ const startServer = async () => {
     // Debug WebSocket upgrade requests
     server.on("upgrade", (request, socket, head) => {
       console.log(`Received WebSocket upgrade request for ${request.url}`);
-      console.log(`Headers: ${JSON.stringify(request.headers, null, 2)}`);
+      //console.log(`Headers: ${JSON.stringify(request.headers, null, 2)}`);
     });
 
     server.on("error", (err) => {
