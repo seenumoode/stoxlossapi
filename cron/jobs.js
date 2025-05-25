@@ -3,7 +3,11 @@ const cron = require("node-cron");
 const { getDb, getCache, getWebSocket, getUIWebSocket } = require("../config");
 const { processMap } = require("../data/marketData");
 const moment = require("moment-timezone");
-const { isTodayWorkingDay, getPreviousWorkingDay } = require("../utils/utils");
+const {
+  isTodayWorkingDay,
+  getPreviousWorkingDay,
+  isStockTimings,
+} = require("../utils/utils");
 
 async function getYesterdayData() {
   try {
@@ -77,10 +81,12 @@ async function getData() {
 cron.schedule(
   "*/1 * * * *'",
   async () => {
-    if (isTodayWorkingDay()) {
+    if (isTodayWorkingDay() && isStockTimings()) {
       getData();
     } else {
-      console.log("Today is a holiday or weekend, skipping data processing");
+      console.log(
+        "Today is a holiday/not stock timing, skipping data processing"
+      );
     }
   },
   {

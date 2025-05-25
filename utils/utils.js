@@ -15,6 +15,20 @@ const holidays = [
   "2025-12-25",
 ];
 
+function isStockTimings() {
+  const now = moment().tz("Asia/Kolkata");
+  const currentTime = now.format("HH:mm:ss");
+  //console.log("Current IST time:", currentTime);
+
+  // Define the time range
+  const startTime = moment.tz("09:15:00", "HH:mm:ss", "Asia/Kolkata");
+  const endTime = moment.tz("15:30:00", "HH:mm:ss", "Asia/Kolkata");
+
+  // Check if current time is between 9:15 AM and 3:30 PM
+  const isBetween = now.isBetween(startTime, endTime, null, "[]"); // '[]' makes it inclusive
+  return isBetween;
+}
+
 function getPreviousWorkingDay() {
   let currentDate = moment
     .tz("Asia/Kolkata")
@@ -45,4 +59,5 @@ function isTodayWorkingDay() {
 module.exports = {
   getPreviousWorkingDay,
   isTodayWorkingDay,
+  isStockTimings,
 };
