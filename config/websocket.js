@@ -90,4 +90,13 @@ const getWebSocket = async () => {
   return streamerInstance;
 };
 
-module.exports = { initializeWebSocket, getWebSocket };
+const stopWebSocket = () => {
+  if (streamerInstance) {
+    streamerInstance = null;
+    console.log("WebSocket connection closed");
+  } else {
+    console.log("No active WebSocket connection to close");
+  }
+};
+
+module.exports = { initializeWebSocket, getWebSocket, stopWebSocket };

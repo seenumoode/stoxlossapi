@@ -1,6 +1,12 @@
 // cron/jobs.js
 const cron = require("node-cron");
-const { getDb, getCache, getWebSocket, getUIWebSocket } = require("../config");
+const {
+  getDb,
+  getCache,
+  getWebSocket,
+  getUIWebSocket,
+  stopWebSocket,
+} = require("../config");
 const { processMap } = require("../data/marketData");
 const moment = require("moment-timezone");
 const {
@@ -61,22 +67,29 @@ async function getData() {
       streamer = await getWebSocket();
       if (streamer) {
         console.log("Cron job: WebSocket is active, processing market data");
-        // Optionally resubscribe or send messages
-        // streamer.subscribe(instrumentKeys, "full");
+
+        processMap(cache, db, true, getUIWebSocket);
+        console.log("Cron job executed: Processed market data");
       }
     } catch (err) {
       console.warn(JSON.stringify(err));
       console.log("Cron job: WebSocket not initialized, initializing now");
     }
-
-    // Process market data
-    processMap(cache, db, true, getUIWebSocket);
-
-    console.log("Cron job executed: Processed market data");
   } catch (err) {
     console.error("Cron job error:", err);
   }
 }
+
+cron.schedule(
+  "35 15 * * *",
+  () => {
+    console.log("Closing connection");
+    stopWebSocket();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 cron.schedule(
   "*/1 * * * *'",

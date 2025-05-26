@@ -2,12 +2,12 @@
 const express = require("express");
 const router = express.Router();
 const { initializeWebSocket, getDb } = require("../config");
-const { isTodayWorkingDay, getPreviousWorkingDay } = require("../utils/utils");
+const { isTodayWorkingDay, isStockTimings } = require("../utils/utils");
 
 module.exports = (db, cache) => {
   // POST endpoint to receive access token and start/reuse WebSocket
   router.post("/auth", async (req, res) => {
-    if (isTodayWorkingDay()) {
+    if (isTodayWorkingDay() && isStockTimings()) {
       try {
         console.log("Received access token:", req.body);
         const { accessToken } = req.body;
