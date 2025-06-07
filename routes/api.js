@@ -7,20 +7,23 @@ const { isTodayWorkingDay, isStockTimings } = require("../utils/utils");
 module.exports = (db, cache) => {
   // POST endpoint to receive access token and start/reuse WebSocket
   router.post("/auth", async (req, res) => {
+    const { accessToken } = req.body;
     if (isTodayWorkingDay() && isStockTimings()) {
       try {
         console.log("Received access token:", req.body);
-        const { accessToken } = req.body;
+
         if (!accessToken) {
           return res.status(400).json({ error: "Access token is required" });
         }
         await initializeWebSocket(accessToken);
+        cache.set("auth", JSON.stringify(accessToken), { EX: 43200 });
         res.json({ message: "WebSocket initialized successfully" });
       } catch (err) {
         console.error("Error initializing WebSocket:", err);
         res.status(500).json({ error: "Failed to initialize WebSocket" });
       }
     } else {
+      cache.set("auth", JSON.stringify(accessToken), { EX: 43200 });
       res.json({ message: "Today is holiday no need of websocket" });
     }
   });
@@ -42,6 +45,23 @@ module.exports = (db, cache) => {
           source: "cache",
           gainers: JSON.parse(cachedGainers),
           losers: JSON.parse(cachedLosers),
+        });
+      }
+    } catch (err) {
+      console.error("API error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  router.get("/getAuth", async (req, res) => {
+    try {
+      let cachedAuth = "";
+      cachedAuth = await cache.get("auth");
+      console.log("Cached Auth:", cachedAuth);
+      if (cachedAuth) {
+        return res.json({
+          source: "cache",
+          auth: JSON.parse(cachedAuth),
         });
       }
     } catch (err) {
