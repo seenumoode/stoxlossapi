@@ -1,6 +1,7 @@
 // routes/api.js
 const express = require("express");
 const router = express.Router();
+const moment = require("moment-timezone");
 const { initializeWebSocket, getDb } = require("../config");
 const { isTodayWorkingDay, isStockTimings } = require("../utils/utils");
 
@@ -8,6 +9,18 @@ module.exports = (db, cache) => {
   // POST endpoint to receive access token and start/reuse WebSocket
   router.post("/auth", async (req, res) => {
     const { accessToken } = req.body;
+    // Get current time in IST
+    const now = moment.tz("Asia/Kolkata");
+
+    // Set expiry to 3:30 AM IST next day
+    const expiry = moment
+      .tz("Asia/Kolkata")
+      .add(1, "day")
+      .set({ hour: 3, minute: 30, second: 0, millisecond: 0 });
+
+    // Calculate expiry in seconds
+    const expiryInSeconds = Math.floor((expiry - now) / 1000);
+
     if (isTodayWorkingDay() && isStockTimings()) {
       try {
         console.log("Received access token:", req.body);
@@ -16,14 +29,14 @@ module.exports = (db, cache) => {
           return res.status(400).json({ error: "Access token is required" });
         }
         await initializeWebSocket(accessToken);
-        cache.set("auth", JSON.stringify(accessToken), { EX: 43200 });
+        cache.set("auth", JSON.stringify(accessToken), { EX: expiryInSeconds });
         res.json({ message: "WebSocket initialized successfully" });
       } catch (err) {
         console.error("Error initializing WebSocket:", err);
         res.status(500).json({ error: "Failed to initialize WebSocket" });
       }
     } else {
-      cache.set("auth", JSON.stringify(accessToken), { EX: 43200 });
+      cache.set("auth", JSON.stringify(accessToken), { EX: expiryInSeconds });
       res.json({ message: "Today is holiday no need of websocket" });
     }
   });
