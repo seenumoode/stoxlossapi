@@ -1,30 +1,46 @@
-// routes/api.js
 const express = require("express");
 const router = express.Router();
 const moment = require("moment-timezone");
 const { initializeWebSocket, getDb } = require("../config");
 const { isTodayWorkingDay, isStockTimings } = require("../utils/utils");
+const jwt = require("jsonwebtoken");
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "JWT_SECRET=9f7a2b8c3d4e5f67890123456789abcdef1234567890fedcba";
 
 module.exports = (db, cache) => {
-  // POST endpoint to receive access token and start/reuse WebSocket
-  router.post("/auth", async (req, res) => {
-    const { accessToken } = req.body;
-    // Get current time in IST
-    const now = moment.tz("Asia/Kolkata");
+  // JWT Authentication Middleware
+  const authenticateJWT = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Access token required" });
+    }
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+      next();
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res.status(401).json({ error: "Token expired" });
+      }
+      return res.status(403).json({ error: "Invalid token" });
+    }
+  };
 
-    // Set expiry to 3:30 AM IST next day
+  // POST /auth - Protected
+  router.post("/auth", authenticateJWT, async (req, res) => {
+    const { accessToken } = req.body;
+    const now = moment.tz("Asia/Kolkata");
     const expiry = moment
       .tz("Asia/Kolkata")
       .add(1, "day")
       .set({ hour: 3, minute: 30, second: 0, millisecond: 0 });
-
-    // Calculate expiry in seconds
     const expiryInSeconds = Math.floor((expiry - now) / 1000);
 
     if (isTodayWorkingDay() && isStockTimings()) {
       try {
         console.log("Received access token:", req.body);
-
         if (!accessToken) {
           return res.status(400).json({ error: "Access token is required" });
         }
@@ -41,8 +57,8 @@ module.exports = (db, cache) => {
     }
   });
 
-  // Example endpoint to get gainers/losers
-  router.get("/data", async (req, res) => {
+  // GET /data - Protected
+  router.get("/data", authenticateJWT, async (req, res) => {
     try {
       let cachedGainers = [];
       let cachedLosers = [];
@@ -66,10 +82,10 @@ module.exports = (db, cache) => {
     }
   });
 
-  router.get("/getAuth", async (req, res) => {
+  // GET /getAuth - Now Protected
+  router.get("/getAuth", authenticateJWT, async (req, res) => {
     try {
-      let cachedAuth = "";
-      cachedAuth = await cache.get("auth");
+      let cachedAuth = await cache.get("auth");
       console.log("Cached Auth:", cachedAuth);
       if (cachedAuth) {
         return res.json({
@@ -77,13 +93,15 @@ module.exports = (db, cache) => {
           auth: JSON.parse(cachedAuth),
         });
       }
+      return res.status(404).json({ error: "No auth token found in cache" });
     } catch (err) {
       console.error("API error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  router.post("/getPastData", async (req, res) => {
+  // POST /getPastData - Protected
+  router.post("/getPastData", authenticateJWT, async (req, res) => {
     try {
       console.log("Received access token:", req.body);
       const { date } = req.body;
@@ -101,7 +119,6 @@ module.exports = (db, cache) => {
       ])
         .then(([losers, gainers]) => {
           const combinedData = { losers, gainers };
-          // Do something with combinedData
           res.json({
             source: "db",
             losers: losers.length ? losers[0].data : [],
