@@ -21,7 +21,7 @@ const nseFoNames = [
   },
   {
     name: "COFORGE LIMITED",
-    asset_key: "NSE_EQ|INE591G01017",
+    asset_key: "NSE_EQ|INE591G01025",
   },
   {
     name: "GRANULES INDIA LIMITED",
@@ -157,7 +157,7 @@ const nseFoNames = [
   },
   {
     name: "BAJAJ FINANCE LIMITED",
-    asset_key: "NSE_EQ|INE296A01024",
+    asset_key: "NSE_EQ|INE296A01032",
   },
   {
     name: "JUBILANT FOODWORKS LTD",
@@ -954,6 +954,50 @@ const nseFoNames = [
   {
     name: "161NSETEST",
     asset_key: "NSE_EQ|DUMMYSAN020",
+  },
+  {
+    name: "KAYNES TECHNOLOGY IND LTD",
+    asset_key: "NSE_EQ|INE918Z01012",
+  },
+  {
+    name: "RAIL VIKAS NIGAM LIMITED",
+    asset_key: "NSE_EQ|INE415G01027",
+  },
+  {
+    name: "FORTIS HEALTHCARE LTD",
+    asset_key: "NSE_EQ|INE061F01013",
+  },
+  {
+    name: "MANKIND PHARMA LIMITED",
+    asset_key: "NSE_EQ|INE634S01028",
+  },
+  {
+    name: "BHARAT DYNAMICS LIMITED",
+    asset_key: "NSE_EQ|INE171Z01026",
+  },
+  {
+    name: "BLUE STAR LIMITED",
+    asset_key: "NSE_EQ|INE472A01039",
+  },
+  {
+    name: "MAZAGON DOCK SHIPBUIL LTD",
+    asset_key: "NSE_EQ|INE249Z01020",
+  },
+  {
+    name: "CUMMINS INDIA LTD",
+    asset_key: "NSE_EQ|INE298A01020",
+  },
+  {
+    name: "SONA BLW PRECISION FRGS L",
+    asset_key: "NSE_EQ|INE073K01018",
+  },
+  {
+    name: "PIRAMAL PHARMA LIMITED",
+    asset_key: "NSE_EQ|INE0DK501011",
+  },
+  {
+    name: "UNO MINDA LIMITED",
+    asset_key: "NSE_EQ|INE405E01023",
   },
 ];
 
