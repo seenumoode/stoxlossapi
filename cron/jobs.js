@@ -81,7 +81,7 @@ async function getData() {
 }
 
 cron.schedule(
-  "35 15 * * *",
+  "55 15 * * *",
   () => {
     console.log("Closing connection");
     stopWebSocket();
