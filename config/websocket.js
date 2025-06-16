@@ -49,12 +49,14 @@ const initializeWebSocket = async (token) => {
             : 0;
           const high = ohlc?.high;
           const low = ohlc?.low;
+          const open = ohlc?.open;
           const todayClose = ohlc?.close;
 
           // Update percentageChangeMap in shared data
           const { percentageChangeMap } = require("../data/marketData");
           percentageChangeMap.set(instrumentKey, {
             percentageChange,
+            open,
             high,
             low,
             close: todayClose,

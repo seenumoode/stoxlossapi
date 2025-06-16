@@ -40,6 +40,7 @@ const processMap = async (cache, db, stockClosed, getUIWebSocket) => {
         instrumentKey,
         name,
         percentageChange: obj.percentageChange,
+        open: obj?.open,
         high: obj?.high,
         low: obj?.low,
         close: obj?.close,
@@ -50,6 +51,7 @@ const processMap = async (cache, db, stockClosed, getUIWebSocket) => {
         instrumentKey,
         name,
         percentageChange: obj.percentageChange,
+        open: obj?.open,
         high: obj?.high,
         low: obj?.low,
         close: obj?.close,
@@ -80,6 +82,7 @@ const processMap = async (cache, db, stockClosed, getUIWebSocket) => {
         name: ele.name,
       });
       allStocks[foundIndex].percentageChange = ele.percentageChange;
+      allStocks[foundIndex].open = ele.open;
       allStocks[foundIndex].high = ele.high;
       allStocks[foundIndex].low = ele.low;
       allStocks[foundIndex].close = ele.close;
