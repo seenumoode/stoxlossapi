@@ -87,6 +87,27 @@ const processMap = async (cache, db, stockClosed, getUIWebSocket) => {
       allStocks[foundIndex].low = ele.low;
       allStocks[foundIndex].close = ele.close;
       allStocks[foundIndex].data.pop();
+    } else {
+      allStocks.push({
+        instrumentKey: ele.instrumentKey,
+        name: ele.name,
+        percentageChange: ele.percentageChange,
+        open: ele.open,
+        high: ele.high,
+        low: ele.low,
+        close: ele.close,
+        data: [
+          {
+            date: new Date().getTime(),
+            open: ele.open ? ele.open : 0,
+            high: ele.high ? ele.high : 0,
+            low: ele.low ? ele.low : 0,
+            close: ele.close ? ele.close : 0,
+            percentageChange: ele.percentageChange,
+            name: ele.name,
+          },
+        ],
+      });
     }
   });
 
