@@ -1,0 +1,148 @@
+const UpstoxClient = require("upstox-js-sdk");
+const axios = require("axios");
+
+const BASE_URL = "https://api.upstox.com/v2";
+
+const instrumentKeys = ["NSE_FO|80198", "NSE_FO|118678", "NSE_FO|118823"];
+const lastTadeValues = [
+  {
+    instrumentKey: "NSE_FO|80198",
+    lastTradePrice: 1.25,
+    buyPrice: 2.95,
+  },
+  {
+    instrumentKey: "NSE_FO|118678",
+    lastTradePrice: 32.15,
+    buyPrice: 30.5,
+  },
+  {
+    instrumentKey: "NSE_FO|118823",
+    lastTradePrice: 4.1,
+    buyPrice: 3.0,
+  },
+];
+
+let streamerInstance = null;
+let accessToken = null;
+
+const token =
+  "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiIzMkNYMzYiLCJqdGkiOiI2ODUyMzc2MGI5N2IyZjNjZWNhZWNhYWEiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc1MDIxODU5MiwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzUwMjg0MDAwfQ.ptrGwIgyUTTZAwukshKlKsR1ZiEqly_5S5-5xBlYnNg";
+
+const initializeWebSocket = async (token) => {
+  if (streamerInstance) {
+    console.log("Reusing existing Upstox WebSocket connection");
+    return streamerInstance;
+  }
+
+  if (!token) {
+    throw new Error("Access token required for WebSocket connection");
+  }
+
+  accessToken = token;
+
+  // Initialize Upstox client
+  let defaultClient = UpstoxClient.ApiClient.instance;
+  let OAUTH2 = defaultClient.authentications["OAUTH2"];
+  OAUTH2.accessToken = accessToken;
+
+  // Create WebSocket connection
+  streamerInstance = new UpstoxClient.MarketDataStreamerV3(
+    instrumentKeys,
+    "ltpc"
+  );
+
+  streamerInstance.on("open", () => {
+    console.log(
+      `Upstox WebSocket connected. Instruments: ${instrumentKeys.length}`
+    );
+    streamerInstance.subscribe(instrumentKeys, "ltpc");
+  });
+
+  streamerInstance.on("message", (data) => {
+    const feeds = JSON.parse(data)?.feeds;
+    console.log("Received message:", JSON.stringify(feeds));
+  });
+
+  streamerInstance.on("error", (error) => {
+    console.error("WebSocket Error:", error);
+  });
+
+  streamerInstance.on("close", () => {
+    console.log("WebSocket connection closed");
+    streamerInstance = null;
+  });
+
+  streamerInstance.autoReconnect(true, 10, 3);
+  streamerInstance.connect();
+
+  return streamerInstance;
+};
+/*
+initializeWebSocket(token)
+  .then((streamer) => {
+    console.log("WebSocket initialized successfully");
+  })
+  .catch((error) => {
+    console.error("Error initializing WebSocket:", error);
+  });
+
+
+const getPositions = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/portfolio/short-term-positions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Api-Version": "2.0",
+          Accept: "application/json",
+        },
+      }
+    );
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Error fetching positions:", error.message);
+    return [];
+  }
+};
+
+getPositions()
+  .then((positions) => {
+    console.log("Positions:", positions);
+    // Process positions as needed
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+  });
+*/
+const orderDetails = {
+  quantity: 1925,
+  product: "D", // Intraday; adjust to "D" for delivery
+  validity: "DAY",
+  price: 4.5,
+  instrument_token: "NSE_FO|118823",
+  order_type: "LIMIT",
+  transaction_type: "SELL",
+  disclosed_quantity: 0,
+  trigger_price: 0,
+  is_amo: false,
+};
+
+axios
+  .post(`${BASE_URL}/order/place`, orderDetails, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Api-Version": "2.0",
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+  .then((response) => {
+    console.log("Order placed successfully:", response.data);
+  })
+  .catch((error) => {
+    console.error(
+      "Error placing order:",
+      error.response?.data || error.message
+    );
+  });
