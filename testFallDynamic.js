@@ -89,6 +89,10 @@ const closePosition = async (instrumentKey) => {
   try {
     const quantity = await getPositionQuantity(instrumentKey);
     const state = instrumentStates.get(instrumentKey);
+    const percentageChange = calculatePercentageChange(
+      state.lastPrice,
+      state.buyPrice
+    );
 
     if (quantity === 0 || !state) {
       console.log(`No open position or state for ${instrumentKey}`);
@@ -114,7 +118,7 @@ const closePosition = async (instrumentKey) => {
     limitPrice = (limitPrice * PRICE_MARKUP).toFixed(2); // 1% markup, rounded to 2 decimals
 
     const orderDetails = {
-      quantity: quantity.toString(),
+      quantity: quantity,
       product: "D", // Delivery
       validity: "DAY",
       price: limitPrice,
@@ -126,20 +130,25 @@ const closePosition = async (instrumentKey) => {
       is_amo: false,
     };
 
-    console.log(`Placing limit order for ${instrumentKey}:`, orderDetails);
-
-    const response = await axios.post(`${BASE_URL}/order/place`, orderDetails, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Api-Version": "2.0",
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-    console.log(
-      `Position closed for ${instrumentKey} (Quantity: ${quantity}):`,
-      response.data
-    );
+    if (percentageChange > 0) {
+      console.log(`Placing limit order for ${instrumentKey}:`, orderDetails);
+      const response = await axios.post(
+        `${BASE_URL}/order/place`,
+        orderDetails,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Api-Version": "2.0",
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(
+        `Position closed for ${instrumentKey} (Quantity: ${quantity}):`,
+        response.data
+      );
+    }
 
     // Verify order status
     const orderId = response.data.data.order_id;

@@ -4,6 +4,7 @@ const router = express.Router();
 const moment = require("moment-timezone");
 const { initializeWebSocket, getDb } = require("../config");
 const { isTodayWorkingDay, isStockTimings } = require("../utils/utils");
+const axios = require("axios");
 
 module.exports = (db, cache) => {
   // POST endpoint to receive access token and start/reuse WebSocket
@@ -71,10 +72,15 @@ module.exports = (db, cache) => {
       let cachedAuth = "";
       cachedAuth = await cache.get("auth");
       console.log("Cached Auth:", cachedAuth);
-      if (cachedAuth) {
+      if (cachedAuth.length > 0) {
         return res.json({
           source: "cache",
-          auth: JSON.parse(cachedAuth),
+          auth: "Authenticated",
+        });
+      } else {
+        return res.json({
+          source: "cache",
+          auth: "Not Authenticated",
         });
       }
     } catch (err) {
@@ -115,6 +121,169 @@ module.exports = (db, cache) => {
     } catch (err) {
       console.error("API error:", err);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Upstocks code
+
+  router.get("/upstox/historicalTrades", async (req, res) => {
+    try {
+      const { endDate } = req.query; // Get endDate from query params
+      let cachedAuth = await cache.get("auth");
+      console.log("Cached Auth (raw):", cachedAuth);
+
+      if (!endDate) {
+        return res.status(400).json({ error: "endDate is required" });
+      }
+
+      // Remove surrounding quotes from cachedAuth if they exist
+      if (cachedAuth && typeof cachedAuth === "string") {
+        cachedAuth = cachedAuth.replace(/^"|"$/g, ""); // Remove leading/trailing quotes
+      }
+
+      if (!cachedAuth) {
+        return res.status(401).json({ error: "No authentication token found" });
+      }
+
+      const url = "https://api.upstox.com/v2/charges/historical-trades";
+      const headers = {
+        Accept: "application/json",
+        Authorization: `Bearer ${cachedAuth}`,
+      };
+
+      const params = {
+        segment: "FO",
+        start_date: "2025-06-01",
+        end_date: endDate,
+        page_number: "1",
+        page_size: "100",
+      };
+
+      const response = await axios.get(url, {
+        headers: headers,
+        params: params,
+      });
+
+      // Send response.data.data if exists, else empty array
+      res.json(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching Orders:", error.message);
+      // Extract only serializable parts of the error response
+      const errorResponse = error.response
+        ? {
+            status: error.response.status,
+            data: error.response.data || null,
+            message: error.message || "Unknown error",
+          }
+        : {
+            status: 500,
+            data: null,
+            message: error.message || "Internal server error",
+          };
+      res.status(errorResponse.status).json(errorResponse.data || []);
+    }
+  });
+
+  router.get("/upstox/positions", async (req, res) => {
+    try {
+      let cachedAuth = await cache.get("auth");
+      console.log("Cached Auth (raw):", cachedAuth);
+
+      // Remove surrounding quotes from cachedAuth if they exist
+      if (cachedAuth && typeof cachedAuth === "string") {
+        cachedAuth = cachedAuth.replace(/^"|"$/g, ""); // Remove leading/trailing quotes
+      }
+
+      if (!cachedAuth) {
+        return res.status(401).json({ error: "No authentication token found" });
+      }
+
+      const url = "https://api.upstox.com/v2/portfolio/short-term-positions";
+      const headers = {
+        Accept: "application/json",
+        Authorization: `Bearer ${cachedAuth}`,
+      };
+
+      const response = await axios.get(url, {
+        headers: headers,
+      });
+
+      // Send response.data.data if exists, else empty array
+      res.json(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching positions:", error.message);
+      // Extract only serializable parts of the error response
+      const errorResponse = error.response
+        ? {
+            status: error.response.status,
+            data: error.response.data || null,
+            message: error.message || "Unknown error",
+          }
+        : {
+            status: 500,
+            data: null,
+            message: error.message || "Internal server error",
+          };
+      res.status(errorResponse.status).json(errorResponse.data || []);
+    }
+  });
+
+  router.get("/upstox/profitLoss", async (req, res) => {
+    try {
+      const { toDate } = req.query; // Get toDate from query params
+      let cachedAuth = await cache.get("auth");
+      console.log("Cached Auth (raw):", cachedAuth);
+
+      if (!toDate) {
+        return res.status(400).json({ error: "toDate is required" });
+      }
+
+      // Remove surrounding quotes from cachedAuth if they exist
+      if (cachedAuth && typeof cachedAuth === "string") {
+        cachedAuth = cachedAuth.replace(/^"|"$/g, ""); // Remove leading/trailing quotes
+      }
+
+      if (!cachedAuth) {
+        return res.status(401).json({ error: "No authentication token found" });
+      }
+
+      const url = "https://api.upstox.com/v2/trade/profit-loss/data";
+      const headers = {
+        Accept: "application/json",
+        Authorization: `Bearer ${cachedAuth}`,
+      };
+
+      const params = {
+        from_date: "01-06-2025",
+        to_date: toDate,
+        segment: "FO",
+        financial_year: "2526",
+        page_number: "1",
+        page_size: "15",
+      };
+
+      const response = await axios.get(url, {
+        headers: headers,
+        params: params,
+      });
+
+      // Send response.data.data if exists, else empty array
+      res.json(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching profit/loss data:", error.message);
+      // Extract only serializable parts of the error response
+      const errorResponse = error.response
+        ? {
+            status: error.response.status,
+            data: error.response.data || null,
+            message: error.message || "Unknown error",
+          }
+        : {
+            status: 500,
+            data: null,
+            message: error.message || "Internal server error",
+          };
+      res.status(errorResponse.status).json(errorResponse.data || []);
     }
   });
 

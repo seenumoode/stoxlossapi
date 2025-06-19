@@ -30,7 +30,7 @@ async function checkPassword(username, password) {
   return true;
 }
 
-checkPassword(username, password);
+//checkPassword(username, password);
 
 /*
 const apikey =
@@ -58,3 +58,45 @@ axios
     console.error("Error:", error);
   });
 */
+
+async function getHistoricalTrades() {
+  const endDate = "2025-06-19"; // Get formattedDate as endDate from query params
+  let cachedAuth = "";
+  const cache = await getCache();
+  let apikey =
+    "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiIzMkNYMzYiLCJqdGkiOiI2ODUzNzZhY2M3ZGY1ODY5ZGNkMzE2NWUiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc1MDMwMDMzMiwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzUwMzcwNDAwfQ.C9LxkN9IN_Rmxpkl_uHDaBjLM9R2rqaoxM5MOidjAss";
+  cachedAuth = await cache.get("auth");
+  console.log("Cached Auth:", cachedAuth);
+
+  const url = "https://api.upstox.com/v2/charges/historical-trades";
+  const headers = {
+    Accept: "application/json",
+    Authorization: `Bearer ${cachedAuth}`,
+  };
+
+  const params = {
+    segment: "FO",
+    start_date: "2025-06-01",
+    end_date: endDate,
+    page_number: "1",
+    page_size: "100",
+  };
+
+  axios
+    .get(url, {
+      headers: headers,
+      params: params,
+    })
+    .then((response) => {
+      // Send data.data if exists, else empty array
+      console.log(response.data || []);
+    })
+    .catch((error) => {
+      console.error("Error fetching historical trades:", error);
+      // Handle error appropriately}
+    });
+  // Send data.data if exists, else empty array
+  //console.log(response.data || []);
+}
+
+getHistoricalTrades();
